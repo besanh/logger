@@ -1,35 +1,64 @@
 package slog
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"os"
 
+	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/gookit/slog/rotatefile"
 )
 
 type (
-	Level int
+	Level     slog.Level
+	Formatter string
 
 	coreConfig struct {
+		level     *slog.LevelVar
+		formatter Formatter
+
 		opt                *slog.HandlerOptions
 		writer             io.Writer
-		level              *slog.LevelVar
 		withLevel          bool
 		withHandlerOptions bool
+
+		// set options
+		isWithTraceId bool
+
+		isWithFileSource bool
+
+		// optional: fetch attributes from context
+		AddSource   bool
+		ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
+
+		// optional: connection to Fluentd
+		isUseFluent  bool
+		FluentClient *fluent.Fluent // fluent client if isUseFluent is true
+		Tag          string
+
+		// optional: customize json payload builder
+		Converter Converter
+
+		attrs           []slog.Attr
+		AttrFromContext []func(ctx context.Context) []slog.Attr
 	}
 
 	config struct {
-		coreConfig  coreConfig
-		traceConfig *traceConfig
+		coreConfig coreConfig
 	}
 )
 
 const (
-	LEVEL_DEBUG int = iota
-	LEVEL_INFO
-	LEVEL_WARN
-	LEVEL_ERROR
+	LEVEL_DEBUG Level = -4
+	LEVEL_INFO  Level = 0
+	LEVEL_WARN  Level = 4
+	LEVEL_ERROR Level = 8
+	LEVEL_FATAL Level = 12
+	LEVEL_TRACE Level = 16
+
+	FORMAT_JSON Formatter = "json"
+	FORMAT_TEXT Formatter = "text"
 )
 
 // Option slog option
@@ -48,10 +77,6 @@ func defaultConfig() *config {
 	coreConfig := defaultCoreConfig()
 	return &config{
 		coreConfig: *coreConfig,
-		traceConfig: &traceConfig{
-			recordStackTraceInSpan: true,
-			errorSpanLevel:         slog.LevelError,
-		},
 	}
 }
 
@@ -67,6 +92,12 @@ func defaultCoreConfig() *coreConfig {
 		level:              level,
 		withLevel:          false,
 		withHandlerOptions: false,
+		formatter:          FORMAT_JSON,
+		isUseFluent:        false,
+		AddSource:          false,
+		isWithTraceId:      false,
+		isWithFileSource:   false,
+		attrs:              []slog.Attr{},
 	}
 }
 
@@ -86,24 +117,10 @@ func WithOutput(iow io.Writer) Option {
 }
 
 // WithLevel slog level
-func WithLevel(lvl *slog.LevelVar) Option {
+func WithLevel(level Level) Option {
 	return option(func(cfg *config) {
-		cfg.coreConfig.level = lvl
+		cfg.coreConfig.level.Set(tranSLevel(level))
 		cfg.coreConfig.withLevel = true
-	})
-}
-
-// WithTraceErrorSpanLevel trace error span level option
-func WithTraceErrorSpanLevel(level slog.Level) Option {
-	return option(func(cfg *config) {
-		cfg.traceConfig.errorSpanLevel = level
-	})
-}
-
-// WithRecordStackTraceInSpan record stack track option
-func WithRecordStackTraceInSpan(recordStackTraceInSpan bool) Option {
-	return option(func(cfg *config) {
-		cfg.traceConfig.recordStackTraceInSpan = recordStackTraceInSpan
 	})
 }
 
@@ -116,5 +133,42 @@ func WithRotateFile(f string) Option {
 	w := io.MultiWriter(os.Stdout, rotateWriter)
 	return option(func(cfg *config) {
 		cfg.coreConfig.writer = w
+	})
+}
+
+// WithFormatter formatter
+// default json.
+// Enum: json or text
+func WithFormatter(formatter Formatter) Option {
+	return option(func(cfg *config) {
+		cfg.coreConfig.formatter = formatter
+	})
+}
+
+func WithTraceId() Option {
+	return option(func(cfg *config) {
+		cfg.coreConfig.isWithTraceId = true
+	})
+}
+
+func WithFileSource() Option {
+	return option(func(cfg *config) {
+		cfg.coreConfig.isWithFileSource = true
+	})
+}
+
+// WithFluentd fluentd config
+func WithFluentd(client *fluent.Fluent, tag string) Option {
+	return option(func(cfg *config) {
+		cfg.coreConfig.isUseFluent = true
+		cfg.coreConfig.FluentClient = client
+		cfg.coreConfig.Tag = tag
+		cfg.coreConfig.AttrFromContext = []func(ctx context.Context) []slog.Attr{}
+	})
+}
+
+func WithAttrs(attrs ...slog.Attr) Option {
+	return option(func(cfg *config) {
+		cfg.coreConfig.attrs = attrs
 	})
 }

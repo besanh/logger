@@ -3,114 +3,129 @@ package slog
 import (
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 )
 
-var logger IFullLogger = NewDefaultLogger()
-
-// SetLogger sets the default logger.
-// Note that this method is not concurrent-safe and must not be called
-// after the use of DefaultLogger and global functions in this package.
-func SetLogger(l IFullLogger) {
-	logger = l
+type SLogger struct {
+	l      *slog.Logger
+	config *config
 }
 
-// DefaultLogger return the default logger.
-func GetLogger() IFullLogger {
-	return logger
+func NewSLogger(opts ...Option) *SLogger {
+	config := defaultConfig()
+	for _, opt := range opts {
+		opt.apply(config)
+	}
+	// When user set the handlerOptions level but not set with coreconfig level
+	if !config.coreConfig.withLevel && config.coreConfig.withHandlerOptions && config.coreConfig.opt.Level != nil {
+		lvl := &slog.LevelVar{}
+		lvl.Set(config.coreConfig.opt.Level.Level())
+		config.coreConfig.level = lvl
+	}
+	config.coreConfig.opt.Level = config.coreConfig.level
+	logger := slog.New(NewDefaultHandler(config.coreConfig.writer, config.coreConfig.opt, &config.coreConfig))
+	return &SLogger{
+		l:      logger,
+		config: config,
+	}
 }
 
-// Info calls the default logger's Info method.
-func Info(args ...any) {
-	logger.
-		Info(fmt.Sprint(args...))
+var _ ILogger = (*SLogger)(nil)
+
+func (l *SLogger) Log(level Level, msg string) {
+	logger := l.l.With()
+	logger.Log(context.TODO(), tranSLevel(level), msg)
 }
 
-// Warn calls the default logger's Warn method.
-func Warn(args ...any) {
-	logger.
-		Warn(fmt.Sprint(args...))
+func (l *SLogger) Logf(level Level, format string, kvs ...interface{}) {
+	logger := l.l.With()
+	msg := getMessage(format, kvs)
+	logger.Log(context.TODO(), tranSLevel(level), msg)
 }
 
-// Error calls the default logger's Error method.
-func Error(args ...any) {
-	logger.
-		Error(fmt.Sprint(args...))
+func (l *SLogger) LogCtxf(level Level, ctx context.Context, format string, kvs ...interface{}) {
+	logger := l.l.With()
+	msg := getMessage(format, kvs)
+	logger.Log(ctx, tranSLevel(level), msg)
 }
 
-// Debug calls the default logger's Debug method.
-func Debug(args ...any) {
-	logger.
-		Debug(fmt.Sprint(args...))
+func (l *SLogger) LogWithAttrs(level Level, ctx context.Context, msg string, attrs ...slog.Attr) {
+	logger := l.l.With()
+	logger.LogAttrs(ctx, tranSLevel(level), msg, attrs...)
 }
 
-// Infof calls the default logger's Infof method.
-func Infof(msg string, args ...any) {
-	logger.
-		Info(fmt.Sprintf(msg, args...))
+func (l *SLogger) Debug(args ...any) {
+	l.Log(LEVEL_DEBUG, fmt.Sprint(args...))
 }
 
-// Warnf calls the default logger's Warnf method.
-func Warnf(msg string, args ...any) {
-	logger.
-		Warn(fmt.Sprintf(msg, args...))
+func (l *SLogger) Info(args ...any) {
+	l.Log(LEVEL_INFO, fmt.Sprint(args...))
 }
 
-// Errorf calls the default logger's Errorf method.
-func Errorf(msg string, args ...any) {
-	logger.
-		Error(fmt.Sprintf(msg, args...))
+func (l *SLogger) Warn(args ...any) {
+	l.Log(LEVEL_WARN, fmt.Sprint(args...))
 }
 
-// Debugf calls the default logger's Debugf method.
-func Debugf(msg string, args ...any) {
-	logger.
-		Debug(fmt.Sprintf(msg, args...))
+func (l *SLogger) Error(args ...any) {
+	l.Log(LEVEL_ERROR, fmt.Sprint(args...))
 }
 
-// InfoContext calls the default logger's InfoContext method.
-func InfoContext(ctx context.Context, args ...any) {
-	logger.
-		InfoContext(ctx, fmt.Sprint(args...))
+func (l *SLogger) Debugf(msg string, args ...any) {
+	l.Logf(LEVEL_DEBUG, msg, args...)
 }
 
-// WarnContext calls the default logger's WarnContext method.
-func WarnContext(ctx context.Context, args ...any) {
-	logger.
-		WarnContext(ctx, fmt.Sprint(args...))
+func (l *SLogger) Infof(msg string, args ...any) {
+	l.Logf(LEVEL_INFO, msg, args...)
 }
 
-// ErrorContext calls the default logger's ErrorContext method.
-func ErrorContext(ctx context.Context, args ...any) {
-	logger.
-		ErrorContext(ctx, fmt.Sprint(args...))
+func (l *SLogger) Warnf(msg string, args ...any) {
+	l.Logf(LEVEL_WARN, msg, args...)
 }
 
-// DebugContext calls the default logger's DebugContext method.
-func DebugContext(ctx context.Context, args ...any) {
-	logger.
-		DebugContext(ctx, fmt.Sprint(args...))
+func (l *SLogger) Errorf(msg string, args ...any) {
+	l.Logf(LEVEL_ERROR, msg, args...)
 }
 
-// InfofContext calls the default logger's InfofContext method.
-func InfofContext(ctx context.Context, msg string, args ...any) {
-	logger.
-		InfoContext(ctx, fmt.Sprintf(msg, args...))
+func (l *SLogger) DebugContext(ctx context.Context, args ...any) {
+	l.LogCtxf(LEVEL_DEBUG, ctx, fmt.Sprint(args...))
 }
 
-// WarnfContext calls the default logger's WarnfContext method.
-func WarnfContext(ctx context.Context, msg string, args ...any) {
-	logger.
-		WarnContext(ctx, fmt.Sprintf(msg, args...))
+func (l *SLogger) InfoContext(ctx context.Context, args ...any) {
+	l.LogCtxf(LEVEL_INFO, ctx, fmt.Sprint(args...))
 }
 
-// ErrorfContext calls the default logger's ErrorfContext method.
-func ErrorfContext(ctx context.Context, msg string, args ...any) {
-	logger.
-		ErrorContext(ctx, fmt.Sprintf(msg, args...))
+func (l *SLogger) WarnContext(ctx context.Context, args ...any) {
+	l.LogCtxf(LEVEL_WARN, ctx, fmt.Sprint(args...))
 }
 
-// DebugfContext calls the default logger's DebugfContext method.
-func DebugfContext(ctx context.Context, msg string, args ...any) {
-	logger.
-		DebugContext(ctx, fmt.Sprintf(msg, args...))
+func (l *SLogger) ErrorContext(ctx context.Context, args ...any) {
+	l.LogCtxf(LEVEL_ERROR, ctx, fmt.Sprint(args...))
+}
+
+func (l *SLogger) DebugfContext(ctx context.Context, msg string, args ...any) {
+	l.LogCtxf(LEVEL_DEBUG, ctx, msg, args...)
+}
+
+func (l *SLogger) InfofContext(ctx context.Context, msg string, args ...any) {
+	l.LogCtxf(LEVEL_INFO, ctx, msg, args...)
+}
+
+func (l *SLogger) WarnfContext(ctx context.Context, msg string, args ...any) {
+	l.LogCtxf(LEVEL_WARN, ctx, msg, args...)
+}
+
+func (l *SLogger) ErrorfContext(ctx context.Context, msg string, args ...any) {
+	l.LogCtxf(LEVEL_ERROR, ctx, msg, args...)
+}
+
+func (l *SLogger) SetLevel(level Level) {
+	lvl := tranSLevel(level)
+	l.config.coreConfig.level.Set(lvl)
+}
+
+func (l *SLogger) SetOutput(writer io.Writer) {
+	log := slog.New(NewDefaultHandler(writer, l.config.coreConfig.opt, &l.config.coreConfig))
+	l.config.coreConfig.writer = writer
+	l.l = log
 }
