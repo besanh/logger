@@ -31,3 +31,5 @@ you can create it later, ensuring LICENSE file is existed constantly
 
     and click to fetch data
     ![Fetch pkg](./assets/images/fetch_pkg.png)
+
+5. Notice that your github name should start with lowercase. It means **besanh** due to **Besanh**
