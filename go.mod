@@ -1,4 +1,4 @@
-module github.com/Besanh/logger
+module github.com/besanh/logger
 
 go 1.23.2
 
