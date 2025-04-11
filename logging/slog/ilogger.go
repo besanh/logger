@@ -40,6 +40,11 @@ func Debug(args ...any) {
 	logger.Debug(args...)
 }
 
+// Fatal calls the default logger's Fatal method.
+func Fatal(args ...any) {
+	logger.Fatal(args...)
+}
+
 // Infof calls the default logger's Infof method.
 func Infof(msg string, args ...any) {
 	logger.Infof(msg, args...)
@@ -58,6 +63,11 @@ func Errorf(msg string, args ...any) {
 // Debugf calls the default logger's Debugf method.
 func Debugf(msg string, args ...any) {
 	logger.Debugf(msg, args...)
+}
+
+// Fatalf calls the default logger's Fatalf method.
+func Fatalf(msg string, args ...any) {
+	logger.Fatalf(msg, args...)
 }
 
 // InfoContext calls the default logger's InfoContext method.
@@ -80,6 +90,12 @@ func DebugContext(ctx context.Context, args ...any) {
 	logger.DebugContext(ctx, args...)
 }
 
+// FatalContext calls the default logger's FatalContext method.
+func FatalContext(ctx context.Context, args ...any) {
+	logger.FatalContext(ctx, args...)
+	os.Exit(1)
+}
+
 // InfofContext calls the default logger's InfofContext method.
 func InfofContext(ctx context.Context, msg string, args ...any) {
 	logger.InfofContext(ctx, msg, args...)
@@ -100,16 +116,12 @@ func DebugfContext(ctx context.Context, msg string, args ...any) {
 	logger.DebugfContext(ctx, msg, args...)
 }
 
-func LogWithAttrs(level Level, ctx context.Context, msg string, attrs ...slog.Attr) {
-	logger.LogWithAttrs(level, ctx, msg, attrs...)
-}
-
-func FatalContext(ctx context.Context, msg string, args ...any) {
-	logger.FatalContext(ctx, args...)
-	os.Exit(1)
-}
-
+// FatalfContext calls the default logger's FatalfContext method.
 func FatalfContext(ctx context.Context, msg string, args ...any) {
 	logger.FatalfContext(ctx, msg, args...)
 	os.Exit(1)
+}
+
+func LogWithAttrs(level Level, ctx context.Context, msg string, attrs ...slog.Attr) {
+	logger.LogWithAttrs(level, ctx, msg, attrs...)
 }
