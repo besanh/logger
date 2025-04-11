@@ -3,6 +3,7 @@ package slog
 import (
 	"context"
 	"log/slog"
+	"os"
 )
 
 var logger IFullLogger = NewSLogger()
@@ -101,4 +102,14 @@ func DebugfContext(ctx context.Context, msg string, args ...any) {
 
 func LogWithAttrs(level Level, ctx context.Context, msg string, attrs ...slog.Attr) {
 	logger.LogWithAttrs(level, ctx, msg, attrs...)
+}
+
+func FatalContext(ctx context.Context, msg string, args ...any) {
+	logger.FatalContext(ctx, args...)
+	os.Exit(1)
+}
+
+func FatalfContext(ctx context.Context, msg string, args ...any) {
+	logger.FatalfContext(ctx, msg, args...)
+	os.Exit(1)
 }

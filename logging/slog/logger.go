@@ -71,6 +71,10 @@ func (l *SLogger) Error(args ...any) {
 	l.Log(LEVEL_ERROR, fmt.Sprint(args...))
 }
 
+func (l *SLogger) Fatal(args ...any) {
+	l.Log(LEVEL_FATAL, fmt.Sprint(args...))
+}
+
 func (l *SLogger) Debugf(msg string, args ...any) {
 	l.Logf(LEVEL_DEBUG, msg, args...)
 }
@@ -85,6 +89,10 @@ func (l *SLogger) Warnf(msg string, args ...any) {
 
 func (l *SLogger) Errorf(msg string, args ...any) {
 	l.Logf(LEVEL_ERROR, msg, args...)
+}
+
+func (l *SLogger) Fatalf(msg string, args ...any) {
+	l.Logf(LEVEL_FATAL, msg, args...)
 }
 
 func (l *SLogger) DebugContext(ctx context.Context, args ...any) {
@@ -103,6 +111,10 @@ func (l *SLogger) ErrorContext(ctx context.Context, args ...any) {
 	l.LogCtxf(LEVEL_ERROR, ctx, fmt.Sprint(args...))
 }
 
+func (l *SLogger) FatalContext(ctx context.Context, args ...any) {
+	l.LogCtxf(LEVEL_FATAL, ctx, fmt.Sprint(args...))
+}
+
 func (l *SLogger) DebugfContext(ctx context.Context, msg string, args ...any) {
 	l.LogCtxf(LEVEL_DEBUG, ctx, msg, args...)
 }
@@ -116,6 +128,10 @@ func (l *SLogger) WarnfContext(ctx context.Context, msg string, args ...any) {
 }
 
 func (l *SLogger) ErrorfContext(ctx context.Context, msg string, args ...any) {
+	l.LogCtxf(LEVEL_ERROR, ctx, msg, args...)
+}
+
+func (l *SLogger) FatalfContext(ctx context.Context, msg string, args ...any) {
 	l.LogCtxf(LEVEL_ERROR, ctx, msg, args...)
 }
 

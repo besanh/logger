@@ -11,6 +11,7 @@ type (
 		Warn(args ...any)
 		Error(args ...any)
 		Debug(args ...any)
+		Fatal(args ...any)
 	}
 
 	IFormatLogger interface {
@@ -18,6 +19,7 @@ type (
 		Warnf(msg string, args ...any)
 		Errorf(msg string, args ...any)
 		Debugf(msg string, args ...any)
+		Fatalf(msg string, args ...any)
 	}
 
 	IContextLogger interface {
@@ -25,6 +27,7 @@ type (
 		WarnContext(ctx context.Context, args ...any)
 		ErrorContext(ctx context.Context, args ...any)
 		DebugContext(ctx context.Context, args ...any)
+		FatalContext(ctx context.Context, args ...any)
 	}
 
 	IContextFormatLogger interface {
@@ -32,6 +35,7 @@ type (
 		WarnfContext(ctx context.Context, msg string, args ...any)
 		ErrorfContext(ctx context.Context, msg string, args ...any)
 		DebugfContext(ctx context.Context, msg string, args ...any)
+		FatalfContext(ctx context.Context, msg string, args ...any)
 	}
 
 	ICustomLogger interface {
